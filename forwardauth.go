@@ -40,6 +40,8 @@ type ForwardAuth struct {
 	Whitelist []string
 
 	Prompt string
+
+	RedirectProto string
 }
 
 // Request Validation
@@ -189,9 +191,17 @@ func (f *ForwardAuth) GetUser(token string) (User, error) {
 
 // Utility methods
 
+func (f *ForwardAuth) redirectProto(r *http.Request) string {
+	if f.RedirectProto != "" {
+		return f.RedirectProto
+	}
+
+	return r.Header.Get("X-Forwarded-Proto")
+}
+
 // Get the redirect base
 func (f *ForwardAuth) redirectBase(r *http.Request) string {
-	proto := r.Header.Get("X-Forwarded-Proto")
+	proto := f.redirectProto(r)
 	host := r.Header.Get("X-Forwarded-Host")
 
 	return fmt.Sprintf("%s://%s", proto, host)
@@ -199,15 +209,18 @@ func (f *ForwardAuth) redirectBase(r *http.Request) string {
 
 // Return url
 func (f *ForwardAuth) returnUrl(r *http.Request) string {
-	path := r.Header.Get("X-Forwarded-Uri")
-
+	var path = r.Header.Get("X-Forwarded-Uri")
+	prefix := r.Header.Get("X-Forwarded-Prefix")
+	if prefix != "" {
+		path = fmt.Sprintf("%s/%s", strings.TrimSuffix(path, "/"), strings.TrimPrefix(prefix, "/"))
+	}
 	return fmt.Sprintf("%s%s", f.redirectBase(r), path)
 }
 
 // Get oauth redirect uri
 func (f *ForwardAuth) redirectUri(r *http.Request) string {
 	if use, _ := f.useAuthDomain(r); use {
-		proto := r.Header.Get("X-Forwarded-Proto")
+		proto := f.redirectProto(r)
 		return fmt.Sprintf("%s://%s%s", proto, f.AuthHost, f.Path)
 	}
 

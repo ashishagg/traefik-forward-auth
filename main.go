@@ -157,6 +157,7 @@ func main() {
 	prompt := flag.String("prompt", "", "Space separated list of OpenID prompt options")
 	logLevel := flag.String("log-level", "warn", "Log level: trace, debug, info, warn, error, fatal, panic")
 	logFormat := flag.String("log-format", "text", "Log format: text, json, pretty")
+	redirectProtocol := flag.String("redirect-proto", "text", "redirect protocol, can be http, https")
 
 	flag.Parse()
 
@@ -226,6 +227,8 @@ func main() {
 		Whitelist: whitelist,
 
 		Prompt: *prompt,
+
+		RedirectProto: *redirectProtocol,
 	}
 
 	// Attach handler
